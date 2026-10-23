@@ -7,6 +7,7 @@ on:
       - 'YM_matcher_v2.py'
       - 'test_ym_matcher_v2.py'
       - 'requirements.txt'
+      - 'verify_mac_bundle.py'
       - '.github/workflows/build-mac.yml'
 
 permissions:
@@ -33,7 +34,16 @@ jobs:
           python -m PyInstaller --noconfirm --clean --windowed --onedir --target-architecture arm64 --name YMMatcher YM_matcher_v2.py
           file dist/YMMatcher.app/Contents/MacOS/YMMatcher
           ditto -c -k --sequesterRsrc --keepParent dist/YMMatcher.app dist/YMMatcher-M1.zip
+      - name: Verify archived application and launch it
+        run: python verify_mac_bundle.py
+      - name: Package disk image
+        run: |
+          mkdir dist/dmg-content
+          ditto dist/YMMatcher.app dist/dmg-content/YMMatcher.app
+          hdiutil create -volname YMMatcher -srcfolder dist/dmg-content -ov -format UDZO dist/YMMatcher-M1.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: YMMatcher-M1
-          path: dist/YMMatcher-M1.zip
+          path: |
+            dist/YMMatcher-M1.zip
+            dist/YMMatcher-M1.dmg
