@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import re
 import unittest
 import zipfile
 
@@ -115,7 +116,8 @@ class MatcherTests(unittest.TestCase):
                 for info in src.infolist():
                     data = src.read(info.filename)
                     if info.filename.startswith("xl/worksheets/"):
-                        data = data.replace(b"<v></v>", b"<v>2</v>")
+                        data, count = re.subn(rb"<v\s*/>|<v>\s*</v>", b"<v>2</v>", data)
+                        self.assertEqual(count, 1)
                     dst.writestr(info, data)
             tmp.replace(path)
         return path
@@ -152,3 +154,4 @@ class MatcherTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
