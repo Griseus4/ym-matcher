@@ -1,0 +1,39 @@
+name: Build YM Matcher for Mac M1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'YM_matcher_v2.py'
+      - 'test_ym_matcher_v2.py'
+      - 'requirements.txt'
+      - '.github/workflows/build-mac.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: arm64
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pyinstaller==6.22.0
+      - name: Verify architecture and window support
+        run: |
+          python -c "import platform, tkinter; assert platform.machine() == 'arm64'; root = tkinter.Tk(); root.withdraw(); root.destroy()"
+      - name: Test matching
+        run: python -m unittest -v test_ym_matcher_v2
+      - name: Build application
+        run: |
+          python -m PyInstaller --noconfirm --clean --windowed --onedir --target-architecture arm64 --name YMMatcher YM_matcher_v2.py
+          file dist/YMMatcher.app/Contents/MacOS/YMMatcher
+          ditto -c -k --sequesterRsrc --keepParent dist/YMMatcher.app dist/YMMatcher-M1.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YMMatcher-M1
+          path: dist/YMMatcher-M1.zip
